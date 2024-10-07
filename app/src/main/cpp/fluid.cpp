@@ -16,14 +16,14 @@ constexpr GLfloat gravity_strength = .005f,
         particle_space = 1.25f,
         k = particle_space / 1000.f,
         kn = k * 10,
-        kai = 0.2f,
+        kai = 0.5f,// 2d: 0.2f,
         rest_dens = 6.0f,
-        rest_mass = 3.662f,
-        viscosity = 0.01f,
+        rest_mass = 2.861f,// 2d: 3.662f,
+        viscosity = 0.01f,// 2d: 0.01f,
         support_rad = particle_space * 1.25f,
         support_rad2 = support_rad * support_rad,
         grid_width = 50,
-        dt = 0.5f,
+        dt = 0.3f,
         max_velocity = 2.0f;
 Hasher hasher( 4093, support_rad);
 
@@ -45,18 +45,19 @@ bool Fluid::init(cuint N)
     // note: test with z = 0
     GLfloat z0 = 0.0f;
     for(GLfloat y = 1; y <= grid_width * 2.0; y += support_rad * 0.5f){
-        for(GLfloat x = -w; x <= w; x += support_rad * 0.5f){
-            //for(GLfloat z = -0.5*w; z <= 0.5*w; z += support_rad * 0.5f){
-            if( particles.size() >= N ) break;
+        for(GLfloat x = -w; x <= w; x += support_rad * 0.5f) {
+            for(GLfloat z = -0.5*w; z <= 0.5*w; z += support_rad * 0.5f){
+                if (particles.size() >= N) break;
 
-            Particle p;
-            p.pos = vec2(x,y);
-            p.col = vec4(1.f);
-            p.pos_old = p.pos + 0.001f * vec2(mRand(), mRand());
-            p.force = vec2(0,0);
-            p.visc = vec2(3.f, 4.f);
-            p.neighbors.reserve(64);// note: this value may change in 3d case
-            particles.push_back(p);
+                Particle p;
+                p.pos = vec3(x, y, z);
+                p.col = vec4(1.f);
+                p.pos_old = p.pos + 0.001f * vec3(mRand(), mRand(), mRand());
+                p.force = vec3(0, 0, 0);
+                p.visc = vec2(3.f, 4.f);
+                p.neighbors.reserve(64);// note: this value may change in 3d case
+                particles.push_back(p);
+            }
 
         }
     }
@@ -78,7 +79,7 @@ void Fluid::step_prep(int i){
 
     particles[i].force += gravity_dir*gravity_strength;
     particles[i].vel += particles[i].force * dt;
-    if(len2(particles[i].vel) > max_velocity*max_velocity) particles[i].vel *= .5f;
+    if(length2(particles[i].vel) > max_velocity*max_velocity) particles[i].vel *= .5f;
     particles[i].pos += particles[i].vel * dt;
 
     // note: ensuring 2d simulation
@@ -100,14 +101,14 @@ void Fluid::step_prep(int i){
         particles[i].vel.y *= -0.9f;
         particles[i].pos.y = particles[i].pos.y <0.0f?0.0f:grid_width * 2;
     }
-    //if(particles[i].pos.z <-grid_width*.5 || particles[i].pos.z >grid_width*.5) {
-    //    particles[i].vel.z *= -0.9f;
-    //    particles[i].pos.z = particles[i].pos.z <-grid_width*.5?-grid_width * .5:grid_width * .5;
-    //}
+    if(particles[i].pos.z <-grid_width*.5 || particles[i].pos.z >grid_width*.5) {
+        particles[i].vel.z *= -0.9f;
+        particles[i].pos.z = particles[i].pos.z <-grid_width*.5?-grid_width * .5:grid_width * .5;
+    }
 
 
     //reset density and neighbors
-    particles[i].force = vec2(0.0f,0.0f);
+    particles[i].force = vec3(0.0f,0.0f, 0.0f);
     particles[i].dens = vec2(0, 0);
     particles[i].neighbors.clear();
 }
@@ -119,9 +120,9 @@ float Fluid::cubickernel(float r, float h) {
         float sigma3d = 8.0f / (M_PI * h * h * h);
         float sigma2d = 40.0f / (7.0f * M_PI * h * h);
         if(q<=0.5f)
-            return (6.0f * (q*q*q - q*q)+1.0f) * sigma2d;
+            return (6.0f * (q*q*q - q*q)+1.0f) * sigma3d;
         else
-            return (2.0f * (1.0f-q)*(1.0f-q)*(1.0f-q)) * sigma2d;
+            return (2.0f * (1.0f-q)*(1.0f-q)*(1.0f-q)) * sigma3d;
     }
     else
         return 0.0f;
@@ -134,9 +135,9 @@ float Fluid::cubickernelgrad(float r, float h) {
         float sigma3d = 48.0f / (M_PI * h * h * h * h);
         float sigma2d = 240.0f / (7.0f * M_PI * h * h * h);
         if(q<=0.5f)
-            return (3.0f*q*q - 2.0f*q) * sigma2d;
+            return (3.0f*q*q - 2.0f*q) * sigma3d;
         else
-            return -(1.0f-q*q)* (1.0f-q*q) * sigma2d;
+            return -(1.0f-q*q)* (1.0f-q*q) * sigma3d;
     }
     else
         return 0.0f;
@@ -152,8 +153,8 @@ void Fluid::step_density(int i){
     hasher.make_nlist(particles[i].pos, nbrs );
     for(int j=0; j<nbrs.size(); j++){
         if(nbrs[j] != &particles[i]) {
-            const vec2 p2n = nbrs[j]->pos - particles[i].pos;   // particle to neighbor. (vector pointing from particles[i] to nbrs[j])
-            const GLfloat p2n_d2 = len2(p2n);                   // particle to neighbor distance squared
+            const vec3 p2n = nbrs[j]->pos - particles[i].pos;   // particle to neighbor. (vector pointing from particles[i] to nbrs[j])
+            const GLfloat p2n_d2 = length2(p2n);                   // particle to neighbor distance squared
 
             if (p2n_d2 < support_rad2) {
                 GLfloat p2n_d = sqrt(p2n_d2); //particle to neighbor distance
@@ -179,10 +180,10 @@ void Fluid::step_pressure(int i){
     //        kn * particles[i].dens.near
     //);
     // note: this is SPH pressure, add gamma to become WCSPH
-    particles[i].press = vec2(max(kai*(pow((particles[i].dens.x/rest_dens),4)- 1.0f),0.0),0.0f);
+    particles[i].press = vec2(max(kai*(pow((particles[i].dens.x/rest_dens),2)- 1.0f),0.0),0.0f);
 }
 void Fluid::step_pressure_force(int i){
-    vec2 pf = {0.f,0.f}; //force vector from pressure
+    vec3 pf = {0.f,0.f, 0.f}; //force vector from pressure
     for(Neighbor& n : particles[i].neighbors)
         //pf +=/*direction*/ normalize(n.j->pos - particles[i].pos ) * /*magnitude*/dot(particles[i].press + n.j->press,vec2(n.q, n.q2));
         pf += /*direction*/normalize(n.j->pos - particles[i].pos) *
@@ -194,7 +195,7 @@ void Fluid::step_pressure_force(int i){
     //    LOG_VER("i: %d, dens: %f, p: %f, pf: %f, %f\n",i,particles[i].dens.x, particles[i].press.x, -pf.x, -pf.y);
 }
 void Fluid::step_viscosity(int i){
-    vec2 pv = vec2(0.0f,0.0f);
+    vec3 pv = vec3(0.0f,0.0f, 0.0f);
     for(Neighbor& n : particles[i].neighbors){
         //const vec3 p2n = n.j->pos - particles[i].pos;
         //const GLfloat l = length2(p2n), q = l / support_rad;
@@ -258,7 +259,7 @@ void Fluid::display()
 
 
     glPointSize( support_rad*4 );
-    glVertexPointer( 2, GL_FLOAT, sizeof(Particle), &particles[0].pos.x );
+    glVertexPointer( 3, GL_FLOAT, sizeof(Particle), &particles[0].pos.x );
     glColorPointer( 4, GL_FLOAT, sizeof(Particle), &particles[0].col.r );
     glEnableClientState( GL_VERTEX_ARRAY );
     glEnableClientState( GL_COLOR_ARRAY );

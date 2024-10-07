@@ -18,6 +18,6 @@ public class FluidSimView extends GLSurfaceView{
     private static class Renderer implements GLSurfaceView.Renderer {
         public void onDrawFrame(GL10 gl){ FluidSimNativeLib.step(); FluidSimNativeLib.display(); }
         public void onSurfaceChanged(GL10 gl, int w, int h){ FluidSimNativeLib.resize(w,h); }
-        public void onSurfaceCreated(GL10 gl, EGLConfig cfg){ FluidSimNativeLib.init(4096); }
+        public void onSurfaceCreated(GL10 gl, EGLConfig cfg){ FluidSimNativeLib.init(16384); }
     }
 }
