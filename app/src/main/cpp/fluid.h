@@ -2,27 +2,13 @@
 // Created by joesc on 12/6/2021.
 //
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 
 #ifndef FLUIDSIM_FLUID_H
 #define FLUIDSIM_FLUID_H
 
 #define Fluid3d
 
-=======
-#ifndef FLUIDSIM_FLUID_H
-#define FLUIDSIM_FLUID_H
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
-#ifndef FLUIDSIM_FLUID_H
-#define FLUIDSIM_FLUID_H
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
-#ifndef FLUIDSIM_FLUID_H
-#define FLUIDSIM_FLUID_H
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
 #include "linalg.h"
 #include <chrono>
 #include <iostream>
@@ -39,9 +25,7 @@ using namespace std;
 typedef unsigned int uint;
 typedef const uint cuint;
 // https://matthias-research.github.io/pages/publications/tetraederCollision.pdf
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 #ifdef Fluid3d
 struct hash_func : unary_function<ivec2, size_t> {
     size_t operator()(ivec2 const& pos) const {
@@ -110,12 +94,7 @@ struct Fluid{
 };
 Fluid* make_fluid(const unsigned int N);
 #else
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
+
 struct hash_func : unary_function<ivec2, size_t> {
     size_t operator()(ivec2 const& pos) const {
         return(size_t) ((pos.x * 73856093) ^ (pos.y * 19349663));
@@ -180,18 +159,8 @@ struct Fluid{
 };
 Fluid* make_fluid(const unsigned int N);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 #endif // Fluid3d
-=======
 
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
-
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
-
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
 
 #endif //FLUIDSIM_FLUID_H

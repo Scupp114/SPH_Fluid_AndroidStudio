@@ -157,16 +157,9 @@ struct vec3
     inline friend vec3 operator * (const GLfloat s, const vec3 &rhs) { return rhs * s; }
     vec3 operator / (const GLfloat s)  const  { return vec3(x / s, y / s, z / s); }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
     vec3 &operator *= (const GLfloat s)   { *this = *this * s; return *this; }
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
+
     vec3 &operator += (const vec3 &rhs) { *this = *this + rhs; return *this; }
     vec3 &operator *= (const vec3 &rhs) { *this = *this * rhs; return *this; }
     vec3 &operator -= (const vec3 &rhs) { *this = *this - rhs; return *this; }
@@ -238,18 +231,11 @@ static GLfloat len(const vec2 &v){
 static vec2 normalize(const vec2 &v){
     return v/len(v);
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 static GLfloat length2(const vec3 &v){
     return dot(v,v);
 }
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
+
 static GLfloat length(const vec3 &v){
     return sqrt(dot(v,v));
 }

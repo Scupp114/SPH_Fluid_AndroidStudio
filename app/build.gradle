@@ -29,17 +29,9 @@ android {
             version '3.22.1'
         }
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
     // changed:
     //ndk{
     //    ldLibs "log"
     //}
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
 }

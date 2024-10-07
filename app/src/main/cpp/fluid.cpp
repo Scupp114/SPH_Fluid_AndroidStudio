@@ -1,23 +1,14 @@
 
 #include "fluid.h"
 #include "logger.h"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 #include "android/log.h"
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
+
 #include <GLES/gl.h>
 #include <jni.h>
 #include <string>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 #ifdef Fluid3d
 inline GLfloat mRand(){ return (GLfloat)rand() * (1.f / RAND_MAX); }
 constexpr int num_threads = 4;
@@ -277,12 +268,6 @@ void Fluid::display()
 }
 #else
 
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
 inline GLfloat mRand(){ return (GLfloat)rand() * (1.f / RAND_MAX); }
 constexpr int num_threads = 4;
 constexpr GLfloat gravity_strength = .005f,
@@ -457,13 +442,6 @@ void Fluid::display()
     glDisableClientState( GL_VERTEX_ARRAY );
     glDisableClientState( GL_COLOR_ARRAY );
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 #endif  // Fluid3d
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
-=======
->>>>>>> a2b4abc247ff86c883ef3467e0a7ea52282247e0
+
