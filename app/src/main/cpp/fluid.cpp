@@ -13,17 +13,17 @@
 inline GLfloat mRand(){ return (GLfloat)rand() * (1.f / RAND_MAX); }
 constexpr int num_threads = 4;
 constexpr GLfloat gravity_strength = .005f,
-        particle_space = 1.25f,
+        particle_space = 1.25f*0.5f,
         k = particle_space / 1000.f,
         kn = k * 10,
-        kai = 0.5f,// 2d: 0.2f,
+        kai = 0.2f*0.8f,// 2d: 0.2f,
         rest_dens = 6.0f,
-        rest_mass = 2.861f,// 2d: 3.662f,
-        viscosity = 0.01f,// 2d: 0.01f,
+        rest_mass = 3.662f * 0.25f,//2.861f,// 2d: 3.662f,
+        viscosity = 0.01f*0.4f,// 2d: 0.01f,
         support_rad = particle_space * 1.25f,
         support_rad2 = support_rad * support_rad,
         grid_width = 50,
-        dt = 0.3f,
+        dt = 0.25f,
         max_velocity = 2.0f;
 Hasher hasher( 4093, support_rad);
 
@@ -44,23 +44,25 @@ bool Fluid::init(cuint N)
     GLfloat w = grid_width / 4;
     // note: test with z = 0
     GLfloat z0 = 0.0f;
+    int particle_num = 0;
     for(GLfloat y = 1; y <= grid_width * 2.0; y += support_rad * 0.5f){
         for(GLfloat x = -w; x <= w; x += support_rad * 0.5f) {
-            for(GLfloat z = -0.5*w; z <= 0.5*w; z += support_rad * 0.5f){
-                if (particles.size() >= N) break;
-
-                Particle p;
-                p.pos = vec3(x, y, z);
-                p.col = vec4(1.f);
-                p.pos_old = p.pos + 0.001f * vec3(mRand(), mRand(), mRand());
-                p.force = vec3(0, 0, 0);
-                p.visc = vec2(3.f, 4.f);
-                p.neighbors.reserve(64);// note: this value may change in 3d case
-                particles.push_back(p);
-            }
+            //for(GLfloat z = -0.5*w; z <= 0.5*w; z += support_rad * 0.5f){
+            if (particles.size() >= N) break;
+            Particle p;
+            p.pos = vec3(x, y, z0);
+            p.col = vec4(1.f);
+            p.pos_old = p.pos + 0.001f * vec3(mRand(), mRand(), 0.0f);
+            p.force = vec3(0, 0, 0);
+            p.visc = vec2(3.f, 4.f);
+            p.neighbors.reserve(64);// note: this value may change in 3d case
+            particles.push_back(p);
+            particle_num++;
+            //}
 
         }
     }
+    LOG_VER("particle_num: %d\n",particle_num);
     return true;
 }
 
@@ -101,10 +103,10 @@ void Fluid::step_prep(int i){
         particles[i].vel.y *= -0.9f;
         particles[i].pos.y = particles[i].pos.y <0.0f?0.0f:grid_width * 2;
     }
-    if(particles[i].pos.z <-grid_width*.5 || particles[i].pos.z >grid_width*.5) {
-        particles[i].vel.z *= -0.9f;
-        particles[i].pos.z = particles[i].pos.z <-grid_width*.5?-grid_width * .5:grid_width * .5;
-    }
+    //if(particles[i].pos.z <-grid_width*.5 || particles[i].pos.z >grid_width*.5) {
+    //    particles[i].vel.z *= -0.9f;
+    //    particles[i].pos.z = particles[i].pos.z <-grid_width*.5?-grid_width * .5:grid_width * .5;
+    //}
 
 
     //reset density and neighbors
@@ -120,9 +122,9 @@ float Fluid::cubickernel(float r, float h) {
         float sigma3d = 8.0f / (M_PI * h * h * h);
         float sigma2d = 40.0f / (7.0f * M_PI * h * h);
         if(q<=0.5f)
-            return (6.0f * (q*q*q - q*q)+1.0f) * sigma3d;
+            return (6.0f * (q*q*q - q*q)+1.0f) * sigma2d;
         else
-            return (2.0f * (1.0f-q)*(1.0f-q)*(1.0f-q)) * sigma3d;
+            return (2.0f * (1.0f-q)*(1.0f-q)*(1.0f-q)) * sigma2d;
     }
     else
         return 0.0f;
@@ -135,9 +137,9 @@ float Fluid::cubickernelgrad(float r, float h) {
         float sigma3d = 48.0f / (M_PI * h * h * h * h);
         float sigma2d = 240.0f / (7.0f * M_PI * h * h * h);
         if(q<=0.5f)
-            return (3.0f*q*q - 2.0f*q) * sigma3d;
+            return (3.0f*q*q - 2.0f*q) * sigma2d;
         else
-            return -(1.0f-q*q)* (1.0f-q*q) * sigma3d;
+            return -(1.0f-q*q)* (1.0f-q*q) * sigma2d;
     }
     else
         return 0.0f;
@@ -147,6 +149,7 @@ void Fluid::step_density(int i){
     particles[i].dens = vec2(0, 0);
 
     GLfloat d = 0, dn = 0; //density
+    float kernelsum = 0.0f;
 
     std::vector<Particle*> nbrs;
     nbrs.reserve( 64 );
@@ -162,17 +165,21 @@ void Fluid::step_density(int i){
                 //d += q2;
                 //dn += q2 * q;
                 d+=rest_mass* cubickernel(p2n_d,support_rad);
+                kernelsum+=cubickernel(p2n_d,support_rad);
 
                 Neighbor n = {nbrs[j],p2n_d, q, q2};
                 particles[i].neighbors.push_back(n);
             }
         }
     }
-    particles[i].dens += vec2(d,dn) + vec2((8.0f / (M_PI * support_rad * support_rad * support_rad))*rest_mass,0.0f);  // self density
+    //particles[i].dens += vec2(d,dn) + vec2((8.0f / (M_PI * support_rad * support_rad * support_rad))*rest_mass,0.0f);  // self density
+    particles[i].dens += vec2(d,dn) + vec2((40.0f / (7.0f * M_PI * support_rad * support_rad))*rest_mass,0.0f);  // self density
+
     particles[i].dens.y = 1.0f/particles[i].dens.x; // inv dens
-    //if(i%200==0)
-    //    __android_log_print(ANDROID_LOG_DEBUG,"Fluid","i: %d, dens: %f, inv_dens: %f\n",i,particles[i].dens.x, particles[i].dens.y);
-        //printf("i: %d, dens: %f, inv_dens: %f\n",i,particles[i].dens.x, particles[i].dens.y);
+    //kernelsum += (40.0f / (7.0f * M_PI * support_rad * support_rad))*rest_mass;
+    //if(i%2000==0)
+    //    __android_log_print(ANDROID_LOG_DEBUG,"FLuidDebug","i: %d, dens: %f, inv_dens: %f, kernelsum: %f\n",i,particles[i].dens.x, particles[i].dens.y, kernelsum);
+    //    //printf("i: %d, dens: %f, inv_dens: %f\n",i,particles[i].dens.x, particles[i].dens.y);
 }
 void Fluid::step_pressure(int i){
     //particles[i].press = vec2(
@@ -180,7 +187,7 @@ void Fluid::step_pressure(int i){
     //        kn * particles[i].dens.near
     //);
     // note: this is SPH pressure, add gamma to become WCSPH
-    particles[i].press = vec2(max(kai*(pow((particles[i].dens.x/rest_dens),2)- 1.0f),0.0),0.0f);
+    particles[i].press = vec2(max(kai*(pow((particles[i].dens.x/rest_dens),4)- 1.0f),0.0),0.0f);
 }
 void Fluid::step_pressure_force(int i){
     vec3 pf = {0.f,0.f, 0.f}; //force vector from pressure
@@ -228,6 +235,13 @@ void Fluid::step(){
         for(int i = 0; i<num_threads; i++)
             ts[i].join();
     };
+    // timing
+    static std::chrono::high_resolution_clock::time_point frame_start;
+    static std::chrono::high_resolution_clock::time_point frame_end;
+    static int64_t total_frame_time_ns;
+
+    frame_start = std::chrono::high_resolution_clock::now();
+
     splitter([&](int i) { step_prep(i); });
     hasher.clear();
     for(auto& p : particles) hasher.insert(p.pos, &p);
@@ -236,6 +250,10 @@ void Fluid::step(){
     splitter([&](int i) { step_pressure_force(i); });
     splitter([&](int i) { step_viscosity(i); });
     splitter([&](int i) { step_color(i); });
+
+    frame_end = std::chrono::high_resolution_clock::now();
+    total_frame_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(frame_end - frame_start).count();
+    LOG_VER("time: %f\nms",1e-6*total_frame_time_ns);
 }
 
 
@@ -253,7 +271,7 @@ void Fluid::display()
     glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
     const GLfloat ar = window.w / static_cast< GLfloat >( window.h );
-    glOrthof( ar * -grid_width, ar * grid_width, 0, 2*grid_width, -1, 1 );
+    glOrthof( ar *-grid_width, ar *grid_width, 0, 2*grid_width, -1, 1 );
     glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();
 
